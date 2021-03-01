@@ -2,7 +2,7 @@
 
 
 ## Build
-**Suppose that you are in current WORKDIR**
+**Suppose that you are in current WORK_DIR**
 1. git clone -b master https://github.com/lammps/lammps.git 
 2. cp src/pair_ann.{h,cpp}  mylammps/src/
 3. cd mylammps              # change to the LAMMPS distribution directory
