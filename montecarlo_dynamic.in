@@ -1,0 +1,230 @@
+#  This is the control script for LAMMPS for MC simulation
+units			metal
+boundary		p p p
+atom_style		full
+############################
+#  define reservoir  variables ########
+############################
+variable Kb equal 0.00008617 # in kcal/mol
+variable MCtemp equal 3000.0
+variable MCmove equal 5000000
+#variable step loop ${previous} 1000000
+###########################
+variable boltzfac  equal ${Kb}*${MCtemp}
+###########################
+read_data		structures/structure${number}.lammps
+mass            1 79.901
+mass            2 12.011
+mass            3 1.001
+mass            4 126.905
+mass            5 14.01
+mass            6 207.2
+variable   E_0 file E_0
+print "${E_0} original" append Energy
+pair_style      ann 6.5
+pair_coeff      * * ./Molecular_Potential.ann Br C H I N Pb
+min_style sd
+##################################
+# MC main loop ###################
+##################################
+label           mainloop
+# Determine which trialmove to go
+
+if "${D_0}==0" then "jump MC.in trialmove1" &
+	else "jump MC.in trialmove2"
+
+##################################
+# MC trial move
+##################################
+	label           trialmove1
+	# Extract A molecule coordinates
+	shell putenv ma=${ma}
+	shell  "awk -v qq=$ma 'NR>20{if ($2 == qq)print}' 1.data > A.txt"
+	shell  "awk  '{sum+= $5 }END{print sum/8}' A.txt > A_avg_X.txt"
+	shell  "awk  '{sum+= $6 }END{print sum/8}' A.txt > A_avg_Y.txt"
+	shell  "awk  '{sum+= $7 }END{print sum/8}' A.txt > A_avg_Z.txt"
+	
+
+    # Extract B molecule coordinates
+	shell putenv fa=${fa}
+	shell  "awk -v qq=$fa 'NR>20{if ($2 == qq)print}' 1.data > B.txt"
+	shell  "awk  '{sum+= $5 }END{print sum/8}' B.txt > B_avg_X.txt"
+	shell  "awk  '{sum+= $6 }END{print sum/8}' B.txt > B_avg_Y.txt"
+	shell  "awk  '{sum+= $7 }END{print sum/8}' B.txt > B_avg_Z.txt"
+
+	# Take values from files
+	variable A_X file A_avg_X.txt
+	variable A_Y file A_avg_Y.txt
+	variable A_Z file A_avg_Z.txt
+	variable B_X file B_avg_X.txt
+	variable B_Y file B_avg_Y.txt
+	variable B_Z file B_avg_Z.txt
+	# Define new displacement
+	variable AB_dx equal ${A_X}-${B_X}
+	variable AB_dy equal ${A_Y}-${B_Y}
+	variable AB_dz equal ${A_Z}-${B_Z}
+	variable BA_dx equal -${AB_dx}
+	variable BA_dy equal -${AB_dy}
+	variable BA_dz equal -${AB_dz}
+	group A_move molecule ${ma}
+	group B_move molecule ${fa}
+	# Displace the molecules involved in this step
+	variable a loop 72
+	label loop
+	shell putenv mol=${mol}
+	shell  "awk -v qq=$mol 'NR>20{if ($2 == qq)print}' 1.data > C.txt"
+	shell "awk  '{sum += $5} END {print sum/8}' C.txt > C_avg_X.txt"
+	shell "awk  '{sum += $6} END {print sum/8}' C.txt > C_avg_Y.txt"
+	shell "awk  '{sum += $7} END {print sum/8}' C.txt > C_avg_Z.txt"
+	variable C_X file C_avg_X.txt
+	variable C_Y file C_avg_Y.txt
+	variable C_Z file C_avg_Z.txt
+	shell "awk -v seed=$RANDOM 'BEGIN{srand(seed);print rand()}' > move_seed.txt"
+	print "${C_X},${C_Y},${C_Z}"
+	group R_move molecule ${mol}
+	variable move_seed file move_seed.txt
+	variable r equal ${move_seed}*360
+	displace_atoms  R_move  rotate ${C_X} ${C_Y} ${C_Z} ${move_seed} ${move_seed} ${move_seed} ${r}
+	variable C_X delete
+	variable C_Y delete
+	variable C_Z delete
+	variable move_seed delete
+	variable r delete
+	group R_move delete
+	next mol
+	next a
+	jump MC.in loop
+	# Calculate  C molecule average
+	displace_atoms  A_move move ${BA_dx} ${BA_dy} ${BA_dz}
+	displace_atoms  B_move move ${AB_dx} ${AB_dy} ${AB_dz}
+	# minimize energy
+	neigh_modify every 1 delay 0 check yes
+	minimize 1.0e-4 1.0e-6 1  1000
+	variable E_2 equal pe
+	print "${E_2}  minimize" append Energy
+	if  "${E_2}<${E_0}" then&
+        "print '${E_2}' file E_0"&
+        "print 'succeed in first test' append Energy"&
+		"jump MC.in Out"&
+	else "jump MC.in Metropolis_mol"
+
+
+	label	trialmove2
+
+	# Extract I coordinate
+	shell  "awk -v qq=4 'NR>20{if ($3 == qq)print }' 1.data > I_info.txt"
+	shell	"awk -v qq=$((1 + RANDOM % 216))  'NR==qq{print}' I_info.txt  > I.txt"
+	shell   "awk  '{print $5}' I.txt > I_x.txt"
+	shell   "awk  '{print $6}' I.txt > I_y.txt"
+	shell   "awk  '{print $7}' I.txt > I_z.txt"
+	shell   "awk  '{print $1}' I.txt > I_ID.txt"
+        # Extract Br coordinate
+	shell  "awk -v qq=1 'NR>20{if ($3 == qq)print }' 1.data > Br_info.txt"
+	shell   "awk -v qq=$((1 + RANDOM % 216))  'NR==qq{print}' Br_info.txt  > Br.txt"
+	shell   "awk  '{print $5}' Br.txt > Br_x.txt"
+	shell   "awk  '{print $6}' Br.txt > Br_y.txt"
+	shell   "awk  '{print $7}' Br.txt > Br_z.txt"
+	shell   "awk  '{print $1}' Br.txt > Br_ID.txt"
+
+	#Find their IDs
+
+	variable        Br_ file Br_ID.txt
+	variable        I_ file I_ID.txt
+	variable        Brid equal ${Br_}
+	variable        Iid equal ${I_}
+
+#	info variables
+
+
+	# Take values from files
+	variable A_X file I_x.txt
+	variable A_Y file I_y.txt
+	variable A_Z file I_z.txt
+	variable B_X file Br_x.txt
+	variable B_Y file Br_y.txt
+	variable B_Z file Br_z.txt
+	group Amove id ${Iid}
+	group Bmove id ${Brid}
+	# Define new displacement
+	variable AB_dx equal ${A_X}-${B_X}
+	variable AB_dy equal ${A_Y}-${B_Y}
+	variable AB_dz equal ${A_Z}-${B_Z}
+	variable BA_dx equal -${AB_dx}
+	variable BA_dy equal -${AB_dy}
+	variable BA_dz equal -${AB_dz}
+	# Displace the molecules involved in this step
+	displace_atoms  Amove move ${BA_dx} ${BA_dy} ${BA_dz}
+	displace_atoms  Bmove move ${AB_dx} ${AB_dy} ${AB_dz}
+
+	variable a loop 72
+	label loop
+	shell putenv mol=${mol}
+	shell  "awk -v qq=$mol 'NR>20{if ($2 == qq)print}' 1.data > C.txt"
+	# Calculate  C molecule average
+	shell "awk  '{sum += $5} END {print sum/8}' C.txt > C_avg_X.txt"
+	shell "awk  '{sum += $6} END {print sum/8}' C.txt > C_avg_Y.txt"
+	shell "awk  '{sum += $7} END {print sum/8}' C.txt > C_avg_Z.txt"
+	variable C_X file C_avg_X.txt
+	variable C_Y file C_avg_Y.txt
+	variable C_Z file C_avg_Z.txt
+	shell "awk -v seed=$RANDOM 'BEGIN{srand(seed);print rand()}' > move_seed.txt"
+	group R_move molecule ${mol}
+	variable move_seed file move_seed.txt
+	variable r equal ${move_seed}*360
+	displace_atoms  R_move  rotate ${C_X} ${C_Y} ${C_Z} ${move_seed} ${move_seed} ${move_seed} ${r}
+	variable C_X delete
+	variable C_Y delete
+	variable C_Z delete
+	variable move_seed delete
+	variable r delete
+	group R_move delete
+	next mol
+	next a
+	jump MC.in loop
+
+
+
+        
+
+	# minimize energy
+	neigh_modify every 1 delay 0 check yes
+	minimize 1.0e-4 1.0e-6 10 1000
+	variable E_2 equal pe
+	print "${E_2} minimize" append Energy
+	if "${E_2}<${E_0}" then&
+        "print '${E_2}' file E_0"&
+        "print 'succeed in first test' append Energy"&
+        "jump MC.in Out"&
+	else "jump MC.in Metropolis_atom"
+
+
+
+
+	label          Metropolis_mol
+	variable       factor equal exp((${E_0}-${E_2})/${boltzfac})  
+	print 'rand: ${randmom} factor is ${factor}' append Energy
+	print "${factor}"
+	if  "${randmom}<${factor}" then&
+	    "print 'molMC succeeds' append Energy"&
+		"print '${E_2}' file E_0"&
+		"jump MC.in Out"&
+	else "print 'failed' append Energy"&
+             "quit 0"
+
+        label          Metropolis_atom
+
+	variable       factor equal exp((${E_0}-${E_2})/${boltzfac})  
+	print 'rand: ${randmom} factor is ${factor}' append Energy
+	print "${factor}"
+	if  "${randmom}<${factor}" then&
+		"print 'atomMC succeeds' append Energy"&
+		"print '${E_2}' file E_0"&
+		"jump MC.in Out"&
+	else "print 'failed' append Energy"&
+		"quit 0"
+
+label   Out
+shell   "rm *.txt"
+variable LL equal ${number}+1
+write_data structures/${LL}
+quit 0 
