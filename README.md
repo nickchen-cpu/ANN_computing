@@ -4,7 +4,7 @@
 ## Build
 **Suppose that you are in current WORK_DIR**
 ```
-1. git clone -b master https://github.com/lammps/lammps.git 
+1. git clone -b master https://github.com/lammps/lammps.git mylammps
 2. cp src/pair_ann.{h,cpp}  mylammps/src/
 3. cd mylammps              # change to the LAMMPS distribution directory
 4. mkdir build; cd build    # create and use a build directory
