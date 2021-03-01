@@ -3,7 +3,7 @@
 
 ## Introduction
 We use lammps to calculate the energy of a molecular structure.
-![Uploading image.png…]()
+![image](https://user-images.githubusercontent.com/70849044/109473796-bf75d200-7aae-11eb-98b7-4adb4e4b5ab2.png)
 
 
 
