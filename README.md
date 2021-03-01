@@ -2,7 +2,9 @@
 
 
 ## Introduction
-- ```lammps_ann``` is for tranforming ANN weighting and bias to the input format for executable ```lammps```
+We use lammps and ANN atomic potential relationship file to calculate the energy of a molecular structure.
+![image](https://user-images.githubusercontent.com/70849044/109464344-7f5c2280-7aa1-11eb-9e06-cf30cd0a70c2.png)
+
 
 
 ## Build
