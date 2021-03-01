@@ -3,7 +3,9 @@
 
 ## Introduction
 We use lammps and ANN atomic potential relationship file to calculate the energy of a molecular structure.
-![image](https://user-images.githubusercontent.com/70849044/109464344-7f5c2280-7aa1-11eb-9e06-cf30cd0a70c2.png)
+![image](https://user-images.githubusercontent.com/70849044/109464962-79b30c80-7aa2-11eb-8abb-c2feed128483.png)
+
+
 
 
 
