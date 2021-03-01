@@ -16,12 +16,12 @@ We use lammps to calculate the energy of a molecular structure.
 ## Build
 **Suppose that you are in current WORK_DIR**
 ```
-1. git clone -b master https://github.com/lammps/lammps.git mylammps
-2. cp src/pair_ann.{h,cpp}  mylammps/src/
-3. cd mylammps              # change to the LAMMPS distribution directory
-4. mkdir build; cd build    # create and use a build directory
-5. cmake ../cmake           # configuration reading CMake scripts from ../cmake
-6. cmake --build .          # compilation (or type "make")
+1. git clone -b master https://github.com/lammps/lammps.git mylammps  # clone the source code of lammps
+2. cp src/pair_ann.{h,cpp}  mylammps/src/                             # embed our ANN computing Algorithm
+3. cd mylammps                                                        # change to the LAMMPS distribution directory
+4. mkdir build; cd build                                              # create and use a build directory
+5. cmake ../cmake                                                     # configuration reading CMake scripts from ../cmake
+6. cmake --build .                                                    # compilation (or type "make")
 7. mv ../src/lmp_mpi ${WORK_DIR}
 ```
 ## Usage
