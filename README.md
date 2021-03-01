@@ -1,4 +1,4 @@
-# pair_ann
+# ANN computing
 
 
 ## Introduction
