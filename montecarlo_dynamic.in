@@ -22,7 +22,7 @@ mass            6 207.2
 variable   E_0 file E_0
 print "${E_0} original" append Energy
 pair_style      ann 6.5
-pair_coeff      * * ./Molecular_Potential.ann Br C H I N Pb
+pair_coeff      * * lammps_ann/molecular_potential.ann Br C H I N Pb
 min_style sd
 ##################################
 # MC main loop ###################

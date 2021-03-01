@@ -1,6 +1,10 @@
 # pair_ann
 
 
+## Introduction
+- ```lammps_ann``` is for tranforming ANN weighting and bias to the input format for executable ```lammps```
+
+
 ## Build
 **Suppose that you are in current WORK_DIR**
 ```
